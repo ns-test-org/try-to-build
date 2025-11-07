@@ -2,83 +2,174 @@
 
 import { useEffect, useState } from 'react';
 
-const slogans = [
-  "Turn chats into apps",
-  "Prompt. Ship. Repeat.",
-  "Build anything from a chat",
-  "Ideas → Apps, instantly",
-  "From zero to MVP in minutes",
-  "Your cofounder in the command line",
-  "Draft, iterate, deploy",
-  "Ship faster than you can type",
-  "Design in text, deliver in code",
-  "Dream it. Prompt it. Run it.",
-  "Chat-native app building",
-  "From prompt to product",
-  "One prompt, infinite apps",
-  "Stop scaffolding. Start shipping.",
-  "Prototype at the speed of thought",
-  "Make conversations executable"
-];
+// Card symbols for the memory game
+const cardSymbols = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺'];
 
-export default function Landing() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+interface Card {
+  id: number;
+  symbol: string;
+  isFlipped: boolean;
+  isMatched: boolean;
+}
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % slogans.length);
-        setIsVisible(true);
-      }, 400);
-    }, 2800);
+export default function MemoryGame() {
+  const [cards, setCards] = useState<Card[]>([]);
+  const [flippedCards, setFlippedCards] = useState<number[]>([]);
+  const [moves, setMoves] = useState(0);
+  const [matches, setMatches] = useState(0);
+  const [gameWon, setGameWon] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Initialize the game
+  const initializeGame = () => {
+    const shuffledCards = [...cardSymbols, ...cardSymbols]
+      .sort(() => Math.random() - 0.5)
+      .map((symbol, index) => ({
+        id: index,
+        symbol,
+        isFlipped: false,
+        isMatched: false,
+      }));
+    
+    setCards(shuffledCards);
+    setFlippedCards([]);
+    setMoves(0);
+    setMatches(0);
+    setGameWon(false);
+    setGameStarted(true);
+  };
+
+  // Handle card click
+  const handleCardClick = (cardId: number) => {
+    if (flippedCards.length === 2) return;
+    if (cards[cardId].isFlipped || cards[cardId].isMatched) return;
+
+    const newFlippedCards = [...flippedCards, cardId];
+    setFlippedCards(newFlippedCards);
+
+    // Flip the card
+    setCards(prev => prev.map(card => 
+      card.id === cardId ? { ...card, isFlipped: true } : card
+    ));
+
+    // Check for match when two cards are flipped
+    if (newFlippedCards.length === 2) {
+      setMoves(prev => prev + 1);
+      
+      const [firstCard, secondCard] = newFlippedCards.map(id => cards[id]);
+      
+      if (firstCard.symbol === secondCard.symbol) {
+        // Match found!
+        setTimeout(() => {
+          setCards(prev => prev.map(card => 
+            newFlippedCards.includes(card.id) 
+              ? { ...card, isMatched: true }
+              : card
+          ));
+          setMatches(prev => prev + 1);
+          setFlippedCards([]);
+          
+          // Check if game is won
+          if (matches + 1 === cardSymbols.length) {
+            setGameWon(true);
+          }
+        }, 1000);
+      } else {
+        // No match - flip cards back
+        setTimeout(() => {
+          setCards(prev => prev.map(card => 
+            newFlippedCards.includes(card.id) 
+              ? { ...card, isFlipped: false }
+              : card
+          ));
+          setFlippedCards([]);
+        }, 1000);
+      }
+    }
+  };
+
+  if (!gameStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="text-center text-white">
+          <h1 className="text-6xl font-bold mb-4">🧠</h1>
+          <h2 className="text-4xl font-bold mb-6">Memory Match</h2>
+          <p className="text-xl mb-8 opacity-90">
+            Find all the matching pairs by flipping cards!
+          </p>
+          <button
+            onClick={initializeGame}
+            className="bg-white text-purple-900 px-8 py-4 rounded-full text-xl font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-black text-white">
-      {/* Enhanced animated aurora background layers */}
-      <div className="absolute inset-0 bg-aurora-layer-1" />
-      <div className="absolute inset-0 bg-aurora-layer-2" />
-      <div className="absolute inset-0 bg-aurora-layer-3" />
-      
-      {/* Floating particles overlay */}
-      <div className="absolute inset-0 bg-particles" />
-      
-      {/* Main content - centered */}
-      <main className="relative z-10 h-full flex flex-col items-center justify-center px-6">
-        <h1 className="text-center text-[clamp(28px,6vw,64px)] font-medium tracking-tight mb-4">
-          Turn Chats into Apps
-        </h1>
-        
-        {/* Rotating slogans */}
-        <div className="mt-4 h-8 md:h-10 overflow-hidden flex items-center justify-center">
-          <span
-            className={`inline-block text-center text-[clamp(18px,3vw,32px)] font-light transition-all duration-[400ms] ease-in-out ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-            }`}
-          >
-            {slogans[currentIndex]}
-          </span>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center text-white mb-8">
+          <h1 className="text-4xl font-bold mb-4">Memory Match</h1>
+          <div className="flex justify-center gap-8 text-lg">
+            <div>Moves: <span className="font-bold">{moves}</span></div>
+            <div>Matches: <span className="font-bold">{matches}/{cardSymbols.length}</span></div>
+          </div>
         </div>
-      </main>
-      
-      {/* Start Prompting arrow pointing left - bottom left */}
-      <div className="absolute left-6 md:left-8 bottom-[5%] z-20 flex items-center gap-3 arrow-point-left">
-        <div className="flex items-center gap-2 text-white/80 font-medium text-sm md:text-base">
-          <svg 
-            className="w-5 h-5 md:w-6 md:h-6 animate-bounce-horizontal" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
+
+        {/* Game Board */}
+        <div className="grid grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
+          {cards.map((card) => (
+            <div
+              key={card.id}
+              onClick={() => handleCardClick(card.id)}
+              className={`
+                aspect-square rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-105
+                ${card.isFlipped || card.isMatched 
+                  ? 'bg-white text-4xl' 
+                  : 'bg-white/20 hover:bg-white/30'
+                }
+                ${card.isMatched ? 'ring-4 ring-green-400' : ''}
+                flex items-center justify-center text-4xl font-bold
+              `}
+            >
+              {card.isFlipped || card.isMatched ? card.symbol : '?'}
+            </div>
+          ))}
+        </div>
+
+        {/* Game Won Modal */}
+        {gameWon && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-8 text-center max-w-md">
+              <h2 className="text-3xl font-bold text-purple-900 mb-4">🎉 You Won!</h2>
+              <p className="text-lg text-gray-700 mb-6">
+                Congratulations! You completed the game in <strong>{moves}</strong> moves.
+              </p>
+              <button
+                onClick={initializeGame}
+                className="bg-purple-900 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-800 transition-colors"
+              >
+                Play Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* New Game Button */}
+        <div className="text-center">
+          <button
+            onClick={initializeGame}
+            className="bg-white/20 text-white px-6 py-3 rounded-full font-semibold hover:bg-white/30 transition-colors"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Start prompting</span>
+            New Game
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
